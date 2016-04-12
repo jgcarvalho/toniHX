@@ -45,6 +45,7 @@ def process(fn):
     hbonds = {}
 
     hproc = {}
+    dist_ho = {}
 
 
     for h in H:
@@ -59,8 +60,16 @@ def process(fn):
                 # hbonds[res].append(o[1])
                 hbonds[res] += 1
                 hproc[res] += beta_h/(1.+math.exp(10.*(dist(h,o)-hcut)))
+                if res in dist_ho.keys():
+                    dist_ho[res].append(dist(h,o))
+                else:
+                    dist_ho[res] = [dist(h,o)]
+
+    # for res in dist_ho.keys():
+    #     print res, dist_ho[res]
 
     heavycontacts = {}
+    dist_nhv = {}
 
     # heavy atom contacts
     for n in N:
@@ -75,27 +84,51 @@ def process(fn):
                 # heavycontacts[res].append(hv[1])
                 heavycontacts[res] += 1
                 hproc[res] += beta_c/(1.+math.exp(5.*(dist(n,hv)-heavycut)))
+                if res in dist_nhv.keys():
+                    dist_nhv[res].append(dist(n,hv))
+                    pass
+                else:
+                    dist_nhv[res] = [dist(n,hv)]
+
+    # print "heavy"
+    # for res in dist_nhv.keys():
+    #     print res, dist_nhv[res]
     #print hbonds
     #print heavycontacts
 
     residues = hbonds.keys()
     residues.sort()
-    return (fn,residues, hbonds, heavycontacts, hproc)
+    return (fn,residues, hbonds, heavycontacts, hproc, dist_ho, dist_nhv)
 
 # write the data (d) to a csv file (outfile)
 def report(d, outfile):
     f = open(outfile, 'w')
+    if ".csv" in outfile:
+        fdho = open(outfile.replace(".csv", "_dist_ho.csv"), 'w')
+        fnhv = open(outfile.replace(".csv", "_dist_nhv.csv"), 'w')
+    else:
+        fdho = open(outfile + "_dist_ho", 'w')
+        fnhv = open(outfile + "_dist_nhv", 'w')
+
 
     for col in range(0,len(d)):
         fn = os.path.basename(d[col][0])
         if col == 0:
             f.write("ResNumber, ResName, Chain, nHB_{}, nC_{}, hproc1_{}, hproc2_{}".format(fn,fn,fn,fn))
+            fdho.write("ResNumber, ResName, Chain, dist_HO_{}".format(fn))
+            fnhv.write("ResNumber, ResName, Chain, dist_NHeavy_{}".format(fn))
             if len(d) == 1:
                 f.write("\n")
+                fdho.write("\n")
+                fnhv.write("\n")
         elif col == len(d)-1:
             f.write(", nHB_{}, nC_{}, hproc1_{}, hproc2_{}\n".format(fn,fn,fn,fn))
+            fdho.write(", dist_HO_{}\n".format(fn))
+            fnhv.write(", dist_NHeavy_{}\n".format(fn))
         else:
             f.write(", nHB_{}, nC_{}, hproc1_{}, hproc2_{}".format(fn,fn,fn,fn))
+            fdho.write(", dist_HO_{}".format(fn))
+            fnhv.write(", dist_NHeavy_{}".format(fn))
 
     for res in d[0][1]:
         for col in range(0,len(d)):
@@ -104,15 +137,34 @@ def report(d, outfile):
             # nc = len(d[col][3][res]) - 1
             nc = d[col][3][res]
             hp = d[col][4][res]
+            if res in d[col][5].keys():
+                distHO = d[col][5][res]
+            else:
+                distHO = []
+            if res in d[col][6].keys():
+                distNHv = d[col][6][res]
+            else:
+                distNHv = []
+
             if col == 0 :
                 f.write("{}, {}, {}, {}, {}, {}, {}".format(res[1],res[2],res[0],nhb,nc,nhb*beta_h + nc*beta_c,hp))
+                fdho.write("{}, {}, {}, \"{}\"".format(res[1],res[2],res[0],distHO))
+                fnhv.write("{}, {}, {}, \"{}\"".format(res[1],res[2],res[0],distNHv))
                 if len(d) == 1:
                     f.write("\n")
+                    fdho.write("\n")
+                    fnhv.write("\n")
             elif col == len(d)-1:
                 f.write(", {}, {}, {}, {}\n".format(nhb,nc,nhb*beta_h + nc*beta_c,hp))
+                fdho.write(", \"{}\"\n".format(distHO))
+                fnhv.write(", \"{}\"\n".format(distNHv))
             else:
                 f.write(", {}, {}, {}, {}".format(nhb,nc,nhb*beta_h + nc*beta_c,hp))
+                fdho.write(", \"{}\"".format(distHO))
+                fnhv.write(", \"{}\"".format(distNHv))
     f.close()
+    fdho.close()
+    fnhv.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
