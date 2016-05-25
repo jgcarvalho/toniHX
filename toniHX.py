@@ -22,9 +22,9 @@ def aproc(x):
     name = x[17:20]
     chain = x[21]
     idx = int(x[6:11])
-    X = float(x[30:39])
-    Y = float(x[38:47])
-    Z = float(x[46:55])
+    X = float(x[30:38])
+    Y = float(x[38:46])
+    Z = float(x[46:54])
     return (res,idx,X,Y,Z, chain, name)
 
 def test(x):
